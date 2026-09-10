@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { Member } from '@domain/members/entities/member.entity';
+import { AdminUser } from '@domain/members/entities/admin-user.entity';
 import { AuthDomainService, MemberDomainService } from '@domain/members/services';
 import { RegisterDto, LoginDto, AuthResponseDto } from '../dtos';
 import { MemberResponseDto } from '../../members/dtos/member-response.dto';
@@ -17,23 +18,25 @@ export class AuthService {
   constructor(
     @InjectRepository(Member)
     private memberRepository: Repository<Member>,
+    @InjectRepository(AdminUser)
+    private adminUserRepository: Repository<AdminUser>,
     private authDomainService: AuthDomainService,
     private memberDomainService: MemberDomainService,
     private jwtService: JwtService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    const { email, password, firstName, lastName, dni, phone, address, city, postalCode } = registerDto;
+    const { email, password, firstName, lastName, dni, birthDate, phone, address, city, postalCode } = registerDto;
 
     const isEmailValid = await this.memberDomainService.validateMemberEmail(email);
     if (!isEmailValid) {
-      throw new ConflictException('Email already exists');
+      throw new ConflictException('Este correo electrónico ya está registrado');
     }
 
     if (dni) {
       const isDniValid = await this.memberDomainService.validateMemberDni(dni);
       if (!isDniValid) {
-        throw new ConflictException('DNI already exists');
+        throw new ConflictException('Este DNI ya está registrado');
       }
     }
 
@@ -47,6 +50,7 @@ export class AuthService {
       first_name: firstName,
       last_name: lastName,
       dni,
+      birth_date: birthDate ? new Date(birthDate) : undefined,
       phone,
       address,
       city,
@@ -54,6 +58,7 @@ export class AuthService {
       membership_number: membershipNumber,
       role_id: socioRole.role_id,
       status: 'ACTIVE',
+      last_login_at: new Date(),
     });
 
     const savedMember = await this.memberRepository.save(member);
@@ -62,7 +67,7 @@ export class AuthService {
     return {
       token,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      member: this.mapToMemberResponse(savedMember),
+      member: await this.mapToMemberResponse(savedMember),
     };
   }
 
@@ -74,16 +79,16 @@ export class AuthService {
     });
 
     if (!member) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Correo electrónico o contraseña incorrectos');
     }
 
     if (member.status !== 'ACTIVE') {
-      throw new UnauthorizedException('Account is not active');
+      throw new UnauthorizedException('La cuenta no está activa');
     }
 
     const isPasswordValid = await this.authDomainService.comparePassword(password, member.password_hash);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Correo electrónico o contraseña incorrectos');
     }
 
     await this.memberDomainService.updateLastLogin(member.member_id);
@@ -93,7 +98,7 @@ export class AuthService {
     return {
       token,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      member: this.mapToMemberResponse(member),
+      member: await this.mapToMemberResponse(member),
     };
   }
 
@@ -103,12 +108,12 @@ export class AuthService {
     });
 
     if (!member) {
-      throw new BadRequestException('Member not found');
+      throw new BadRequestException('Miembro no encontrado');
     }
 
     const isPasswordValid = await this.authDomainService.comparePassword(currentPassword, member.password_hash);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException('La contraseña actual es incorrecta');
     }
 
     const passwordHash = await this.authDomainService.hashPassword(newPassword);
@@ -127,7 +132,11 @@ export class AuthService {
     return this.jwtService.sign(payload, { expiresIn: '24h' });
   }
 
-  private mapToMemberResponse(member: Member): MemberResponseDto {
+  private async mapToMemberResponse(member: Member): Promise<MemberResponseDto> {
+    const adminUser = await this.adminUserRepository.findOne({
+      where: { member_id: member.member_id },
+    });
+
     return {
       memberId: member.member_id,
       roleId: member.role_id,
@@ -135,10 +144,18 @@ export class AuthService {
       firstName: member.first_name,
       lastName: member.last_name,
       dni: member.dni,
+      birthDate: member.birth_date,
+      phone: member.phone,
+      address: member.address,
+      city: member.city,
+      postalCode: member.postal_code,
       membershipNumber: member.membership_number,
       status: member.status,
       createdAt: member.created_at,
       updatedAt: member.updated_at,
+      lastLoginAt: member.last_login_at,
+      profilePicture: member.profile_picture ? member.profile_picture.toString('base64') : undefined,
+      isAdmin: adminUser ? adminUser.status === 'ACTIVE' : false,
     };
   }
 }

@@ -1,0 +1,60 @@
+.admin-calendar-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-calendar-page h2 {
+  color: #2c3e50;
+  margin: 0 0 24px 0;
+  font-size: 1.8rem;
+}
+
+.calendar-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.info-card,
+.upcoming-events {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.info-card h3,
+.upcoming-events h3 {
+  margin: 0 0 12px 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.info-card p {
+  margin: 0;
+  color: #666;
+  line-height: 1.6;
+}
+
+.upcoming-events {
+  display: flex;
+  flex-direction: column;
+}
+
+.upcoming-events .info-message {
+  color: #666;
+  margin: 0;
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 1024px) {
+  .calendar-info {
+    grid-template-columns: 1fr;
+  }
+}

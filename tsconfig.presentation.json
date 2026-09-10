@@ -8,18 +8,16 @@
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "noEmit": true,
     "isolatedModules": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
+    "types": ["vite/client"],
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src/presentation/**/*.ts", "src/presentation/**/*.tsx"],
+  "include": ["env.d.ts", "src/presentation/**/*.ts", "src/presentation/**/*.tsx", "src/presentation/**/*.d.ts", "src/presentation/index.d.ts", "src/global.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

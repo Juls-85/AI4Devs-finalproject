@@ -2,11 +2,15 @@ import {
   Controller,
   Get,
   Put,
+  Post,
   Param,
   Body,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { MembersService } from '../services/members.service';
 import { UpdateMemberDto } from '../dtos/update-member.dto';
 import { MemberResponseDto } from '../dtos/member-response.dto';
@@ -36,5 +40,29 @@ export class MembersController {
     @Body() updateDto: UpdateMemberDto,
   ): Promise<MemberResponseDto> {
     return this.membersService.updateMember(memberId, updateDto);
+  }
+
+  @Post(':memberId/picture')
+  @UseGuards(JwtGuard)
+  @UseInterceptors(
+    FileInterceptor('picture', {
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          cb(new Error('Solo se permiten archivos de imagen'), false);
+        } else {
+          cb(null, true);
+        }
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async uploadProfilePicture(
+    @Param('memberId') memberId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<MemberResponseDto> {
+    if (!file) {
+      throw new Error('No file uploaded');
+    }
+    return this.membersService.updateProfilePicture(memberId, file.buffer);
   }
 }

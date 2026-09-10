@@ -19,12 +19,12 @@ const ChangePasswordPage = () => {
     setSuccess('')
 
     if (newPassword !== confirmPassword) {
-      setError('New passwords do not match')
+      setError('Las contraseñas no coinciden')
       return
     }
 
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters')
+      setError('La contraseña debe tener al menos 6 caracteres')
       return
     }
 
@@ -32,13 +32,13 @@ const ChangePasswordPage = () => {
 
     try {
       await changePassword(currentPassword, newPassword)
-      setSuccess('Password changed successfully!')
+      setSuccess('¡Contraseña cambiada correctamente!')
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
       setTimeout(() => navigate(`/profile/${user?.memberId}`), 2000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Password change failed')
+      setError(err instanceof Error ? err.message : 'Error al cambiar la contraseña')
     } finally {
       setIsLoading(false)
     }
@@ -47,15 +47,15 @@ const ChangePasswordPage = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Change Password</h1>
-        <p className="subtitle">Update your account password</p>
+        <h1>Cambiar contraseña</h1>
+        <p className="subtitle">Actualiza tu contraseña de cuenta</p>
 
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="currentPassword">Current Password *</label>
+            <label htmlFor="currentPassword">Contraseña actual *</label>
             <input
               id="currentPassword"
               type="password"
@@ -67,7 +67,7 @@ const ChangePasswordPage = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="newPassword">New Password *</label>
+            <label htmlFor="newPassword">Nueva contraseña *</label>
             <input
               id="newPassword"
               type="password"
@@ -80,7 +80,7 @@ const ChangePasswordPage = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password *</label>
+            <label htmlFor="confirmPassword">Confirmar contraseña *</label>
             <input
               id="confirmPassword"
               type="password"
@@ -92,13 +92,18 @@ const ChangePasswordPage = () => {
             />
           </div>
 
-          <button type="submit" disabled={isLoading} className="btn-primary">
-            {isLoading ? 'Changing...' : 'Change Password'}
-          </button>
+          <div className="form-actions">
+            <button type="submit" disabled={isLoading} className="btn-primary">
+              {isLoading ? 'Cambiando...' : 'Cambiar contraseña'}
+            </button>
+            <Link to={`/profile/${user?.memberId}`} className="btn-cancel">
+              Cancelar
+            </Link>
+          </div>
         </form>
 
         <p className="auth-link">
-          <Link to={`/profile/${user?.memberId}`}>Back to Profile</Link>
+          <Link to="/">Volver a inicio</Link>
         </p>
       </div>
     </div>

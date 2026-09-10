@@ -369,6 +369,8 @@ docker-compose restart
 
 ### Notas importantes
 
+***Para ver el panel de administrador crea un registro en admin_users con el member_id que quieras usar para ello y que su Status sea ACTIVE***
+
 **Frontend (src/presentation/)**
 - **Puerto**: Por defecto corre en http://localhost:3001
 - **Proxy a API**: Vite redirige automáticamente `/api/*` a http://localhost:3000

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import '../styles/profile.css'
@@ -10,14 +10,32 @@ const ProfilePage = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [profilePicture, setProfilePicture] = useState(user?.profilePicture ? `data:image/jpeg;base64,${user.profilePicture}` : '')
+  const [selectedPictureFile, setSelectedPictureFile] = useState<File | null>(null)
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
+    firstName: '',
+    lastName: '',
+    birthDate: '',
     phone: '',
     address: '',
     city: '',
     postalCode: '',
   })
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : '',
+        phone: user.phone || '',
+        address: user.address || '',
+        city: user.city || '',
+        postalCode: user.postalCode || '',
+      })
+      setProfilePicture(user.profilePicture ? `data:image/jpeg;base64,${user.profilePicture}` : '')
+    }
+  }, [user])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -32,7 +50,31 @@ const ProfilePage = () => {
 
     try {
       await updateProfile(formData)
-      setSuccess('Profile updated successfully')
+
+      if (selectedPictureFile && user) {
+        const formDataToSend = new FormData()
+        formDataToSend.append('picture', selectedPictureFile)
+
+        const token = localStorage.getItem('token')
+        const response = await fetch(`http://localhost:3000/api/v1/members/${user.memberId}/picture`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formDataToSend,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.message || 'Error al subir la foto')
+        }
+
+        const updatedMember = await response.json()
+        localStorage.setItem('user', JSON.stringify(updatedMember))
+        setSelectedPictureFile(null)
+      }
+
+      setSuccess('Perfil actualizado correctamente')
       setIsEditing(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Update failed')
@@ -46,20 +88,44 @@ const ProfilePage = () => {
     navigate('/auth/login')
   }
 
+  const handleCancel = () => {
+    setIsEditing(false)
+    setSelectedPictureFile(null)
+    setProfilePicture(user?.profilePicture ? `data:image/jpeg;base64,${user.profilePicture}` : '')
+    setError('')
+    setSuccess('')
+  }
+
+  const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setSelectedPictureFile(file)
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const result = event.target?.result as string
+      setProfilePicture(result)
+    }
+    reader.readAsDataURL(file)
+  }
+
   if (!user) {
-    return <div>Loading...</div>
+    return <div>Cargando...</div>
   }
 
   return (
     <div className="profile-container">
       <div className="profile-header">
-        <h1>My Profile</h1>
+        <h1>Mi perfil</h1>
         <div className="profile-actions">
+          <Link to="/" className="btn-secondary">
+            Volver a inicio
+          </Link>
           <Link to={`/profile/${user.memberId}/password`} className="btn-secondary">
-            Change Password
+            Cambiar contraseña
           </Link>
           <button onClick={handleLogout} className="btn-danger">
-            Logout
+            Cerrar sesión
           </button>
         </div>
       </div>
@@ -69,27 +135,29 @@ const ProfilePage = () => {
 
       <div className="profile-card">
         <div className="profile-section">
-          <h2>Profile Information</h2>
+          <h2>Información del perfil</h2>
 
           {!isEditing ? (
             <div className="profile-view">
-              <div className="profile-field">
-                <label>Member ID</label>
-                <p>{user.memberId}</p>
-              </div>
+              {profilePicture && (
+                <div className="profile-field">
+                  <label>Foto de perfil</label>
+                  <img src={profilePicture} alt="Foto de perfil" style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '4px' }} />
+                </div>
+              )}
 
               <div className="profile-field">
-                <label>Membership Number</label>
+                <label>Número de membresía</label>
                 <p>{user.membershipNumber}</p>
               </div>
 
               <div className="profile-field">
-                <label>Email</label>
+                <label>Correo electrónico</label>
                 <p>{user.email}</p>
               </div>
 
               <div className="profile-field">
-                <label>Name</label>
+                <label>Nombre</label>
                 <p>
                   {user.firstName} {user.lastName}
                 </p>
@@ -102,24 +170,90 @@ const ProfilePage = () => {
                 </div>
               )}
 
+              {user.birthDate && (
+                <div className="profile-field">
+                  <label>Fecha de nacimiento</label>
+                  <p>{new Date(user.birthDate).toLocaleDateString('es-ES')}</p>
+                </div>
+              )}
+
+              {user.phone && (
+                <div className="profile-field">
+                  <label>Teléfono</label>
+                  <p>{user.phone}</p>
+                </div>
+              )}
+
+              {user.address && (
+                <div className="profile-field">
+                  <label>Dirección</label>
+                  <p>{user.address}</p>
+                </div>
+              )}
+
+              {user.city && (
+                <div className="profile-field">
+                  <label>Ciudad</label>
+                  <p>{user.city}</p>
+                </div>
+              )}
+
+              {user.postalCode && (
+                <div className="profile-field">
+                  <label>Código postal</label>
+                  <p>{user.postalCode}</p>
+                </div>
+              )}
+
+              {user.lastLoginAt && (
+                <div className="profile-field">
+                  <label>Último acceso</label>
+                  <p>{new Date(user.lastLoginAt).toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}</p>
+                </div>
+              )}
+
               <div className="profile-field">
-                <label>Status</label>
+                <label>Estado</label>
                 <p>
                   <span className={`status-badge status-${user.status.toLowerCase()}`}>
-                    {user.status}
+                    {user.status === 'ACTIVE' && 'Activo'}
+                    {user.status === 'INACTIVE' && 'Inactivo'}
+                    {user.status === 'BLOCKED' && 'Bloqueado'}
                   </span>
                 </p>
               </div>
 
               <button onClick={() => setIsEditing(true)} className="btn-primary">
-                Edit Profile
+                Editar perfil
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="profile-form">
+              <div className="form-group">
+                <label htmlFor="picture">Foto de perfil</label>
+                {profilePicture && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <img src={profilePicture} alt="Foto de perfil" style={{ maxWidth: '150px', maxHeight: '150px', borderRadius: '4px' }} />
+                  </div>
+                )}
+                <input
+                  id="picture"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePictureChange}
+                  disabled={isLoading}
+                />
+              </div>
+
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="firstName">First Name</label>
+                  <label htmlFor="firstName">Nombre</label>
                   <input
                     id="firstName"
                     name="firstName"
@@ -131,7 +265,7 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="lastName">Last Name</label>
+                  <label htmlFor="lastName">Apellido</label>
                   <input
                     id="lastName"
                     name="lastName"
@@ -144,7 +278,7 @@ const ProfilePage = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="phone">Phone</label>
+                <label htmlFor="phone">Teléfono</label>
                 <input
                   id="phone"
                   name="phone"
@@ -156,7 +290,7 @@ const ProfilePage = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="address">Address</label>
+                <label htmlFor="address">Dirección</label>
                 <input
                   id="address"
                   name="address"
@@ -167,9 +301,21 @@ const ProfilePage = () => {
                 />
               </div>
 
+              <div className="form-group">
+                <label htmlFor="birthDate">Fecha de nacimiento</label>
+                <input
+                  id="birthDate"
+                  name="birthDate"
+                  type="date"
+                  value={formData.birthDate}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+              </div>
+
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="city">City</label>
+                  <label htmlFor="city">Ciudad</label>
                   <input
                     id="city"
                     name="city"
@@ -181,7 +327,7 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="postalCode">Postal Code</label>
+                  <label htmlFor="postalCode">Código postal</label>
                   <input
                     id="postalCode"
                     name="postalCode"
@@ -195,15 +341,15 @@ const ProfilePage = () => {
 
               <div className="form-actions">
                 <button type="submit" disabled={isLoading} className="btn-primary">
-                  {isLoading ? 'Saving...' : 'Save Changes'}
+                  {isLoading ? 'Guardando...' : 'Guardar cambios'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsEditing(false)}
+                  onClick={handleCancel}
                   className="btn-secondary"
                   disabled={isLoading}
                 >
-                  Cancel
+                  Cancelar
                 </button>
               </div>
             </form>

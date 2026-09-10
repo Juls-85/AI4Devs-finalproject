@@ -12,7 +12,7 @@ export class MemberDomainService {
 
   async generateMembershipNumber(): Promise<string> {
     const count = await this.memberRepository.count();
-    return `FRP-${1000 + count + 1}`;
+    return `FRP-${String(count + 1).padStart(4, '0')}`;
   }
 
   async validateMemberEmail(email: string, excludeMemberId?: string): Promise<boolean> {

@@ -18,9 +18,11 @@ const LoginPage = () => {
 
     try {
       await login(email, password)
-      navigate('/profile')
+      setTimeout(() => {
+        navigate('/')
+      }, 100)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
     } finally {
       setIsLoading(false)
     }
@@ -29,14 +31,14 @@ const LoginPage = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Login</h1>
-        <p className="subtitle">Welcome back to Frapen Angels</p>
+        <h1>Iniciar sesión</h1>
+        <p className="subtitle">Bienvenido de nuevo a Frapen Angels</p>
 
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Correo electrónico</label>
             <input
               id="email"
               type="email"
@@ -48,7 +50,7 @@ const LoginPage = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">Contraseña</label>
             <input
               id="password"
               type="password"
@@ -59,13 +61,22 @@ const LoginPage = () => {
             />
           </div>
 
-          <button type="submit" disabled={isLoading} className="btn-primary">
-            {isLoading ? 'Logging in...' : 'Login'}
-          </button>
+          <div className="form-actions">
+            <button type="submit" disabled={isLoading} className="btn-primary">
+              {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+            </button>
+            <Link to="/" className="btn-cancel">
+              Atrás
+            </Link>
+          </div>
         </form>
 
         <p className="auth-link">
-          Don't have an account? <Link to="/auth/register">Register here</Link>
+          ¿No tienes cuenta? <Link to="/auth/register">Regístrate aquí</Link>
+        </p>
+
+        <p className="auth-link">
+          ¿Olvidaste tu contraseña? <Link to="/auth/forgot-password">Recupérala aquí</Link>
         </p>
       </div>
     </div>

@@ -68,6 +68,9 @@ export class Member {
   @Column({ type: 'timestamp', nullable: true })
   last_login_at?: Date;
 
+  @Column({ type: 'bytea', nullable: true })
+  profile_picture?: Buffer;
+
   @OneToMany(() => AdminUser, (adminUser) => adminUser.member)
   admin_users!: AdminUser[];
 }

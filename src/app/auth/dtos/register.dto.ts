@@ -33,6 +33,10 @@ export class RegisterDto {
 
   @IsOptional()
   @IsString()
+  birthDate?: string;
+
+  @IsOptional()
+  @IsString()
   phone?: string;
 
   @IsOptional()

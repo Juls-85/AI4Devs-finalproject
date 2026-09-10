@@ -47,13 +47,6 @@ export class AuthDomainService {
     if (!role) {
       role = this.roleRepository.create({
         role_name: 'SOCIO',
-        permissions: {
-          view_routes: true,
-          propose_routes: true,
-          register_routes: true,
-          view_profile: true,
-          update_profile: true,
-        },
       });
       await this.roleRepository.save(role);
     }

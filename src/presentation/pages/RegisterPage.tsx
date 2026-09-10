@@ -10,6 +10,7 @@ const RegisterPage = () => {
     firstName: '',
     lastName: '',
     dni: '',
+    birthDate: '',
     phone: '',
     address: '',
     city: '',
@@ -17,12 +18,27 @@ const RegisterPage = () => {
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { register } = useAuth()
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null)
+  const [profilePicturePreview, setProfilePicturePreview] = useState('')
+  const { register, updateUserData } = useAuth()
   const navigate = useNavigate()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setProfilePictureFile(file)
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const result = event.target?.result as string
+      setProfilePicturePreview(result)
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,8 +47,31 @@ const RegisterPage = () => {
     setIsLoading(true)
 
     try {
-      await register(formData)
-      navigate('/profile')
+      const registerResponse = await register(formData)
+
+      if (profilePictureFile && registerResponse) {
+        const formDataToSend = new FormData()
+        formDataToSend.append('picture', profilePictureFile)
+
+        const response = await fetch(`http://localhost:3000/api/v1/members/${registerResponse.member.memberId}/picture`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${registerResponse.token}`,
+          },
+          body: formDataToSend,
+        })
+
+        if (response.ok) {
+          const updatedMember = await response.json()
+          updateUserData(updatedMember)
+        } else {
+          console.error('Error al subir la foto de perfil')
+        }
+      }
+
+      setTimeout(() => {
+        navigate('/')
+      }, 100)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
@@ -43,15 +82,15 @@ const RegisterPage = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Register</h1>
-        <p className="subtitle">Create your Frapen Angels account</p>
+        <h1>Registrarse</h1>
+        <p className="subtitle">Crea tu cuenta de Frapen Angels</p>
 
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="firstName">First Name *</label>
+              <label htmlFor="firstName">Nombre *</label>
               <input
                 id="firstName"
                 name="firstName"
@@ -64,7 +103,7 @@ const RegisterPage = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="lastName">Last Name *</label>
+              <label htmlFor="lastName">Apellido *</label>
               <input
                 id="lastName"
                 name="lastName"
@@ -78,7 +117,7 @@ const RegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Email *</label>
+            <label htmlFor="email">Correo electrónico *</label>
             <input
               id="email"
               name="email"
@@ -91,7 +130,7 @@ const RegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password *</label>
+            <label htmlFor="password">Contraseña *</label>
             <input
               id="password"
               name="password"
@@ -118,7 +157,21 @@ const RegisterPage = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="phone">Phone</label>
+              <label htmlFor="birthDate">Fecha de nacimiento</label>
+              <input
+                id="birthDate"
+                name="birthDate"
+                type="date"
+                value={formData.birthDate}
+                onChange={handleChange}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="phone">Teléfono</label>
               <input
                 id="phone"
                 name="phone"
@@ -131,7 +184,7 @@ const RegisterPage = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="address">Address</label>
+            <label htmlFor="address">Dirección</label>
             <input
               id="address"
               name="address"
@@ -144,7 +197,7 @@ const RegisterPage = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="city">City</label>
+              <label htmlFor="city">Ciudad</label>
               <input
                 id="city"
                 name="city"
@@ -156,7 +209,7 @@ const RegisterPage = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="postalCode">Postal Code</label>
+              <label htmlFor="postalCode">Código postal</label>
               <input
                 id="postalCode"
                 name="postalCode"
@@ -168,13 +221,34 @@ const RegisterPage = () => {
             </div>
           </div>
 
-          <button type="submit" disabled={isLoading} className="btn-primary">
-            {isLoading ? 'Registering...' : 'Register'}
-          </button>
+          <div className="form-group">
+            <label htmlFor="picture">Foto de perfil (opcional)</label>
+            {profilePicturePreview && (
+              <div style={{ marginBottom: '10px' }}>
+                <img src={profilePicturePreview} alt="Foto de perfil" style={{ maxWidth: '150px', maxHeight: '150px', borderRadius: '4px' }} />
+              </div>
+            )}
+            <input
+              id="picture"
+              type="file"
+              accept="image/*"
+              onChange={handlePictureChange}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-actions">
+            <button type="submit" disabled={isLoading} className="btn-primary">
+              {isLoading ? 'Registrando...' : 'Registrarse'}
+            </button>
+            <Link to="/" className="btn-cancel">
+              Cancelar
+            </Link>
+          </div>
         </form>
 
         <p className="auth-link">
-          Already have an account? <Link to="/auth/login">Login here</Link>
+          ¿Ya tienes cuenta? <Link to="/auth/login">Inicia sesión aquí</Link>
         </p>
       </div>
     </div>

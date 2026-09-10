@@ -59,4 +59,5 @@ export class AuthController {
 
     return { message: 'Password changed successfully' };
   }
+
 }
